@@ -1,9 +1,8 @@
 import httpx
 import json
-import speech_recognition as sr
 import tempfile
 import os
-from pydub import AudioSegment
+import requests
 from elevenlabs import generate, clone, set_api_key, Voice, VoiceSettings
 from openai import OpenAI
 from app.config import OPENROUTER_API_KEY, ELEVENLABS_API_KEY, OPENAI_API_KEY
@@ -14,7 +13,6 @@ if ELEVENLABS_API_KEY:
 
 class SpeechToTextService:
     def __init__(self):
-        self.recognizer = sr.Recognizer()
         self.openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
     
     async def transcribe_audio(self, audio_file_path: str) -> str:
@@ -28,10 +26,8 @@ class SpeechToTextService:
                     )
                 return transcript.text.strip()
             else:
-                # Fallback to Google Speech Recognition
-                with sr.AudioFile(audio_file_path) as source:
-                    audio_data = self.recognizer.record(source)
-                return self.recognizer.recognize_google(audio_data)
+                # Simple fallback - return empty for now
+                return "Transcription not available - please add OpenAI API key"
         except Exception as e:
             print(f"Transcription error: {e}")
             return ""

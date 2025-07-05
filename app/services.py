@@ -11,7 +11,7 @@ class SpeechAnalysisService:
         self.model = "mistralai/mistral-7b-instruct"
     
     async def analyze_speech(self, text: str) -> dict:
-        """Analyze speech and generate alternatives"""
+        """Analyze speech and generate alternatives with the same length"""
         
         if not self.api_key:
             print("ERROR: No OpenRouter API key configured!")
@@ -33,11 +33,11 @@ class SpeechAnalysisService:
                 }},
                 {{
                     "demographic": "Second demographic", 
-                    "speech": "Rewritten speech for this demographic in 2-3 sentences, considering what they care about. Match original speech length."
+                    "speech": "Rewritten speech for this demographic, considering what they care about. Match original speech length."
                 }},
                 {{
                     "demographic": "Third demographic",
-                    "speech": "Rewritten speech for this demographic in 2-3 sentences, considering what they care about. Match original speech length."
+                    "speech": "Rewritten speech for this demographic, considering what they care about. Match original speech length."
                 }}
             ]
         }}
@@ -54,7 +54,7 @@ class SpeechAnalysisService:
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7,
-            "max_tokens": 1500
+            "max_tokens": 15000
         }
 
         try:

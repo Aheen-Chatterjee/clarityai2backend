@@ -4,7 +4,7 @@ from fastapi.responses import StreamingResponse
 import tempfile
 import os
 import io
-from app.services import speech_to_text, speech_analysis, voice_service
+from app.services import speech_analysis, voice_service
 
 app = FastAPI(title="ClarityAI MVP Backend")
 
@@ -21,30 +21,6 @@ app.add_middleware(
 async def root():
     return {"message": "ClarityAI MVP Backend"}
 
-@app.post("/transcribe")
-async def transcribe_audio(audio_file: UploadFile = File(...)):
-    """Convert audio to text"""
-    try:
-        # Save uploaded file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
-            content = await audio_file.read()
-            tmp_file.write(content)
-            tmp_file_path = tmp_file.name
-        
-        # Transcribe
-        text = await speech_to_text.transcribe_audio(tmp_file_path)
-        
-        # Cleanup
-        os.unlink(tmp_file_path)
-        
-        if not text:
-            raise HTTPException(status_code=400, detail="Could not transcribe audio")
-        
-        return {"text": text}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/analyze")
 async def analyze_speech(request_data: dict):
     """Analyze speech and generate alternatives"""
@@ -53,10 +29,13 @@ async def analyze_speech(request_data: dict):
         if not text.strip():
             raise HTTPException(status_code=400, detail="Text cannot be empty")
         
+        print(f"Analyzing text: {text[:100]}...")
         analysis = await speech_analysis.analyze_speech(text)
+        print(f"Analysis completed: {analysis}")
         return analysis
     
     except Exception as e:
+        print(f"Analysis error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/clone-voice")
@@ -81,6 +60,7 @@ async def clone_voice(audio_file: UploadFile = File(...)):
         return {"voice_id": voice_id, "message": "Voice cloned successfully"}
     
     except Exception as e:
+        print(f"Voice cloning error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-audio")
@@ -90,6 +70,7 @@ async def generate_audio(text: str, use_user_voice: bool = False):
         if not text.strip():
             raise HTTPException(status_code=400, detail="Text cannot be empty")
         
+        print(f"Generating audio for: {text[:50]}...")
         audio_data = await voice_service.generate_speech(text, use_user_voice)
         
         if not audio_data:
@@ -102,6 +83,7 @@ async def generate_audio(text: str, use_user_voice: bool = False):
         )
     
     except Exception as e:
+        print(f"Audio generation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

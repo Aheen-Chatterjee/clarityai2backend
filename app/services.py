@@ -1,10 +1,5 @@
 import httpx
 import json
-import tempfile
-import os
-import requests
-from gtts import gTTS
-import io
 from app.config import OPENROUTER_API_KEY
 
 print(f"OpenRouter API Key configured: {bool(OPENROUTER_API_KEY)}")
@@ -115,53 +110,5 @@ class SpeechAnalysisService:
             ]
         }
 
-class VoiceService:
-    def __init__(self):
-        self.voices = {
-            'male': 'co.uk',     # British male
-            'female': 'ca',      # Canadian female  
-            'user': 'com.au'     # Australian (as "user" voice)
-        }
-        self.current_voice = 'male'
-    
-    async def clone_voice(self, audio_file_path: str) -> str:
-        """Simulate voice cloning by switching to user voice"""
-        try:
-            # Since we can't actually clone, just mark as user voice available
-            self.current_voice = 'user'
-            print("Voice 'cloned' successfully (using different accent)")
-            return "user_voice_id_simulation"
-        except Exception as e:
-            print(f"Voice simulation error: {e}")
-            return None
-    
-    async def generate_speech(self, text: str, use_user_voice: bool = False) -> bytes:
-        """Generate speech using Google Text-to-Speech"""
-        try:
-            # Choose voice based on user preference
-            if use_user_voice and self.current_voice == 'user':
-                tld = self.voices['user']
-                print("Using 'user' voice (Australian accent)")
-            else:
-                tld = self.voices['male']
-                print("Using default voice (British accent)")
-            
-            # Generate speech with gTTS
-            tts = gTTS(text=text, lang='en', tld=tld, slow=False)
-            
-            # Save to bytes
-            mp3_fp = io.BytesIO()
-            tts.write_to_fp(mp3_fp)
-            mp3_fp.seek(0)
-            
-            audio_data = mp3_fp.read()
-            print(f"Audio generated successfully: {len(audio_data)} bytes")
-            return audio_data
-            
-        except Exception as e:
-            print(f"Speech generation error: {e}")
-            return None
-
-# Initialize services
+# Initialize service
 speech_analysis = SpeechAnalysisService()
-voice_service = VoiceService()

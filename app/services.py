@@ -3,28 +3,11 @@ import json
 import tempfile
 import os
 import requests
-from elevenlabs import generate, clone, set_api_key, Voice, VoiceSettings
-from app.config import OPENROUTER_API_KEY, ELEVENLABS_API_KEY
+from gtts import gTTS
+import io
+from app.config import OPENROUTER_API_KEY
 
 print(f"OpenRouter API Key configured: {bool(OPENROUTER_API_KEY)}")
-print(f"ElevenLabs API Key configured: {bool(ELEVENLABS_API_KEY)}")
-
-# Initialize services
-if ELEVENLABS_API_KEY:
-    set_api_key(ELEVENLABS_API_KEY)
-
-class SpeechToTextService:
-    def __init__(self):
-        pass
-    
-    async def transcribe_audio(self, audio_file_path: str) -> str:
-        """Simple placeholder - actual transcription will be done in frontend"""
-        try:
-            # For now, return a message indicating frontend should handle this
-            return "Speech transcription will be handled by the browser"
-        except Exception as e:
-            print(f"Transcription error: {e}")
-            return "Transcription failed"
 
 class SpeechAnalysisService:
     def __init__(self):
@@ -51,15 +34,15 @@ class SpeechAnalysisService:
             "alternateSpeeches": [
                 {{
                     "demographic": "First demographic",
-                    "speech": "Rewritten speech for this demographic, considering what they care about. Match length of original speech."
+                    "speech": "Rewritten speech for this demographic, considering what they care about. Match original speech length."
                 }},
                 {{
                     "demographic": "Second demographic", 
-                    "speech": "Rewritten speech for this demographic, considering what they care about. Match length of original speech."
+                    "speech": "Rewritten speech for this demographic in 2-3 sentences, considering what they care about. Match original speech length."
                 }},
                 {{
                     "demographic": "Third demographic",
-                    "speech": "Rewritten speech for this demographic, considering what they care about. Match length of original speech."
+                    "speech": "Rewritten speech for this demographic in 2-3 sentences, considering what they care about. Match original speech length."
                 }}
             ]
         }}
@@ -134,58 +117,51 @@ class SpeechAnalysisService:
 
 class VoiceService:
     def __init__(self):
-        self.user_voice_id = None
+        self.voices = {
+            'male': 'co.uk',     # British male
+            'female': 'ca',      # Canadian female  
+            'user': 'com.au'     # Australian (as "user" voice)
+        }
+        self.current_voice = 'male'
     
     async def clone_voice(self, audio_file_path: str) -> str:
-        """Clone user's voice"""
-        if not ELEVENLABS_API_KEY:
-            print("No ElevenLabs API key - voice cloning not available")
-            return None
-            
+        """Simulate voice cloning by switching to user voice"""
         try:
-            voice = clone(
-                name="User Voice",
-                description="User's cloned voice",
-                files=[audio_file_path]
-            )
-            self.user_voice_id = voice.voice_id
-            print(f"Voice cloned successfully: {voice.voice_id}")
-            return voice.voice_id
+            # Since we can't actually clone, just mark as user voice available
+            self.current_voice = 'user'
+            print("Voice 'cloned' successfully (using different accent)")
+            return "user_voice_id_simulation"
         except Exception as e:
-            print(f"Voice cloning error: {e}")
+            print(f"Voice simulation error: {e}")
             return None
     
     async def generate_speech(self, text: str, use_user_voice: bool = False) -> bytes:
-        """Generate speech audio"""
-        if not ELEVENLABS_API_KEY:
-            print("No ElevenLabs API key - speech generation not available")
-            return None
-            
+        """Generate speech using Google Text-to-Speech"""
         try:
-            if use_user_voice and self.user_voice_id:
-                voice_id = self.user_voice_id
-                print(f"Using user voice: {voice_id}")
+            # Choose voice based on user preference
+            if use_user_voice and self.current_voice == 'user':
+                tld = self.voices['user']
+                print("Using 'user' voice (Australian accent)")
             else:
-                voice_id = "21m00Tcm4TlvDq8ikWAM"  # Default voice
-                print(f"Using default voice: {voice_id}")
+                tld = self.voices['male']
+                print("Using default voice (British accent)")
             
-            audio = generate(
-                text=text,
-                voice=Voice(
-                    voice_id=voice_id,
-                    settings=VoiceSettings(
-                        stability=0.75,
-                        similarity_boost=0.75
-                    )
-                )
-            )
-            print("Audio generated successfully")
-            return audio
+            # Generate speech with gTTS
+            tts = gTTS(text=text, lang='en', tld=tld, slow=False)
+            
+            # Save to bytes
+            mp3_fp = io.BytesIO()
+            tts.write_to_fp(mp3_fp)
+            mp3_fp.seek(0)
+            
+            audio_data = mp3_fp.read()
+            print(f"Audio generated successfully: {len(audio_data)} bytes")
+            return audio_data
+            
         except Exception as e:
             print(f"Speech generation error: {e}")
             return None
 
 # Initialize services
-speech_to_text = SpeechToTextService()
 speech_analysis = SpeechAnalysisService()
 voice_service = VoiceService()

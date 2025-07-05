@@ -1,7 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 import tempfile
 import os
 import io
@@ -17,14 +16,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-class SpeechInput(BaseModel):
-    text: str
-
-class AnalysisResponse(BaseModel):
-    category: str
-    demographics: list
-    alternateSpeeches: list
 
 @app.get("/")
 async def root():
@@ -54,14 +45,15 @@ async def transcribe_audio(audio_file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/analyze", response_model=AnalysisResponse)
-async def analyze_speech(speech_input: SpeechInput):
+@app.post("/analyze")
+async def analyze_speech(request_data: dict):
     """Analyze speech and generate alternatives"""
     try:
-        if not speech_input.text.strip():
+        text = request_data.get("text", "")
+        if not text.strip():
             raise HTTPException(status_code=400, detail="Text cannot be empty")
         
-        analysis = await speech_analysis.analyze_speech(speech_input.text)
+        analysis = await speech_analysis.analyze_speech(text)
         return analysis
     
     except Exception as e:
